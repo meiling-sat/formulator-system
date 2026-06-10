@@ -1,5 +1,5 @@
 import { streamText } from "ai";
-import { openai } from "@ai-sdk/openai";
+import { createOpenAI } from "@ai-sdk/openai";
 import { anthropic } from "@ai-sdk/anthropic";
 
 export const runtime = "edge";
@@ -41,9 +41,19 @@ const FORMULATOR_SYSTEM_PROMPT = `你是一名专业保健食品配方师（Form
 - 使用 Markdown 格式`;
 
 function getModel() {
-  const provider = process.env.AI_PROVIDER || "anthropic";
+  const provider = process.env.AI_PROVIDER || "deepseek";
 
-  if (provider === "openai") {
+  if (provider === "deepseek") {
+    const deepseek = createOpenAI({
+      apiKey: process.env.DEEPSEEK_API_KEY || "",
+      baseURL: "https://api.deepseek.com",
+    });
+    const modelName = process.env.DEEPSEEK_MODEL || "deepseek-chat";
+    return deepseek(modelName);
+  } else if (provider === "openai") {
+    const openai = createOpenAI({
+      apiKey: process.env.OPENAI_API_KEY || "",
+    });
     const modelName = process.env.OPENAI_MODEL || "gpt-4o";
     return openai(modelName);
   } else {
@@ -74,7 +84,7 @@ export async function POST(req: Request) {
     
     if (message.includes("API key")) {
       return new Response(
-        JSON.stringify({ error: "API Key 未配置。请在 .env.local 中设置 OPENAI_API_KEY 或 ANTHROPIC_API_KEY" }),
+        JSON.stringify({ error: "API Key 未配置。请在环境变量中设置 DEEPSEEK_API_KEY、OPENAI_API_KEY 或 ANTHROPIC_API_KEY" }),
         { status: 401, headers: { "Content-Type": "application/json" } }
       );
     }
